@@ -204,23 +204,23 @@ This can be a big topic that has been discussed in the official wiki already. He
 #### Shibboleth2.xml
 This is the core configuration file for shibboleth. Despite from the plenty of complicated configurable points, following are a few you need to care about:
 
-1. ```<ApplicationDefault>```	
+1.```ApplicationDefaults```	
 
-	This XML block contains most of the configurations related to your application(service provider). A few critical attributes of it you may need to modify based on your need:
+This XML block contains most of the configurations related to your application(service provider). A few critical attributes of it you may need to modify based on your need:
 	* **entityID** this works as the identity of your service provider on throughout the identity federation environment. Usually, we follow the convention `{full_domain}/shibboleth` for it. Note that this looks like a url end point but it is not. It's just an ID to identify the service provider.
 	* **homeURL** this is the home url shibd deamon will redirect to after user access has passed shibboleth validation.
 	* **signing** this is an attribute you probably need to modify from the default "**false**" value. Official wiki provides complete explanation about how to configure [here](https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPSigningEncryption).
 
-2. ```<Sessions>```
+2.```Sessions```
 
-	This is one xml block included inside `<ApplicationDefault>`, which controls the session. Three attributes you need to have a look:
+This is one xml block included inside `<ApplicationDefaults>`, which controls the session. Three attributes you need to have a look:
 	* **handlerURL** Usually we use `Shibboleth.sso` for this value, which matches the one we set in one of the nginx location configuration block. You can modify it but just make sure it matches with those in nginx configurations.
 	* **handlerSSL** Most of the case, we will setup shibboleth with https to enhance the security and in this case you should set this value to be **true**. However, chances exist that people want to just use http, which is not recommended. In this case, you may need to disable this by setting it to **false**.
 	* **cookieProps** This one controls the allowed connections for cookie. In previous version of shibboleth, there are several value you need to provide for this configuration, but now you can just use set configurations described as "**https**" or "**http**" and shibboleth will do the remaining work. Same as above, "**https**" will restrict cookie to be only used on https secured connection and "**http**" will also allow cookie to be used in any http connection.
 
-3. ```<SSO>```
+3.```SSO```
 
-	This is one block inside `<Sessions>`, which states the entityID of id provider as well as allowed SAML protocol version. Following is an example:
+This is one block inside `<Sessions>`, which states the entityID of id provider as well as allowed SAML protocol version. Following is an example:
 	
 	```
     <SSO entityID="IDProvider">
@@ -229,13 +229,13 @@ This is the core configuration file for shibboleth. Despite from the plenty of c
     ```
    SAML2 SAML1 correspond to **SAML2.0** and **SAML1.1** protocols. Here the configuration states that both **SAML2.0** and **SAML1.1** are allowed. One thing you need to be careful here is the entityID. It **must match** with the entityID in the one inside **id provider metadata** you get from your id provider.
    
-4. ```<MetadataProvider>```
+4.```MetadataProvider```
 
-	This block specifies the solution to obtain ip provider metadata, either through secured https request or locally. Easy way to get thing done is to use the local way, which you just need to put the id provider metadata file on your server and update `file` attribute to point to the metadata location.
+This block specifies the solution to obtain ip provider metadata, either through secured https request or locally. Easy way to get thing done is to use the local way, which you just need to put the id provider metadata file on your server and update `file` attribute to point to the metadata location.
 	
-5. ```<RequestMapper>```
+5.```RequestMapper```
 
-	This is a necessary configuration in order to map the protection target location to shibboleth so that it know where to protect. This is originally not needed but because we use fastCGI, it is required. Following is an example matching the nginx configuration above:
+This is a necessary configuration in order to map the protection target location to shibboleth so that it know where to protect. This is originally not needed but because we use fastCGI, it is required. Following is an example matching the nginx configuration above:
 	
 	```
 	<RequestMapper type="XML">
@@ -249,13 +249,13 @@ This is the core configuration file for shibboleth. Despite from the plenty of c
 	    </RequestMap>
 	</RequestMapper>
 	```
-	Note that `redirectToSSL="443"` is a good practice for https only setup. It helps redirect all http access for the target path to https.
+Note that `redirectToSSL="443"` is a good practice for https only setup. It helps redirect all http access for the target path to https.
 	
 #### metadata.xml
 Not much to be discussed here as the content of metadata highly depends on the specific application requirements. But just note a few points:
 
 1. the certificate used in metadata for securely communication with id provider can be self-signed certificate and it is actually recommended to do so. Shibboleth also provides program to auto generate the certificate and private key and put it at developer desired place.
-2. entityID in metadata should match with that in `<ApplicationDefault>` in **shibboleth2.xml**.
+2. entityID in metadata should match with that in `<ApplicationDefaults>` in **shibboleth2.xml**.
 3. For AssertionConsumerService, there are quite a few available options for shibboleth on SAML2.0 and usually the common choice is `urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST`.
 
 ## Conclusion
