@@ -207,16 +207,18 @@ This is the core configuration file for shibboleth. Despite from the plenty of c
 1.```ApplicationDefaults```	
 
 This XML block contains most of the configurations related to your application(service provider). A few critical attributes of it you may need to modify based on your need:
-	* **entityID** this works as the identity of your service provider on throughout the identity federation environment. Usually, we follow the convention `{full_domain}/shibboleth` for it. Note that this looks like a url end point but it is not. It's just an ID to identify the service provider.
-	* **homeURL** this is the home url shibd deamon will redirect to after user access has passed shibboleth validation.
-	* **signing** this is an attribute you probably need to modify from the default "**false**" value. Official wiki provides complete explanation about how to configure [here](https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPSigningEncryption).
+
+* **entityID** this works as the identity of your service provider on throughout the identity federation environment. Usually, we follow the convention `{full_domain}/shibboleth` for it. Note that this looks like a url end point but it is not. It's just an ID to identify the service provider.
+* **homeURL** this is the home url shibd deamon will redirect to after user access has passed shibboleth validation.
+* **signing** this is an attribute you probably need to modify from the default "**false**" value. Official wiki provides complete explanation about how to configure [here](https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPSigningEncryption).
 
 2.```Sessions```
 
 This is one xml block included inside `<ApplicationDefaults>`, which controls the session. Three attributes you need to have a look:
-	* **handlerURL** Usually we use `Shibboleth.sso` for this value, which matches the one we set in one of the nginx location configuration block. You can modify it but just make sure it matches with those in nginx configurations.
-	* **handlerSSL** Most of the case, we will setup shibboleth with https to enhance the security and in this case you should set this value to be **true**. However, chances exist that people want to just use http, which is not recommended. In this case, you may need to disable this by setting it to **false**.
-	* **cookieProps** This one controls the allowed connections for cookie. In previous version of shibboleth, there are several value you need to provide for this configuration, but now you can just use set configurations described as "**https**" or "**http**" and shibboleth will do the remaining work. Same as above, "**https**" will restrict cookie to be only used on https secured connection and "**http**" will also allow cookie to be used in any http connection.
+
+* **handlerURL** Usually we use `Shibboleth.sso` for this value, which matches the one we set in one of the nginx location configuration block. You can modify it but just make sure it matches with those in nginx configurations.
+* **handlerSSL** Most of the case, we will setup shibboleth with https to enhance the security and in this case you should set this value to be **true**. However, chances exist that people want to just use http, which is not recommended. In this case, you may need to disable this by setting it to **false**.
+* **cookieProps** This one controls the allowed connections for cookie. In previous version of shibboleth, there are several value you need to provide for this configuration, but now you can just use set configurations described as "**https**" or "**http**" and shibboleth will do the remaining work. Same as above, "**https**" will restrict cookie to be only used on https secured connection and "**http**" will also allow cookie to be used in any http connection.
 
 3.```SSO```
 
