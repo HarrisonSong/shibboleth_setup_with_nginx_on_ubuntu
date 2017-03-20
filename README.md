@@ -260,5 +260,91 @@ Not much to be discussed here as the content of metadata highly depends on the s
 2. entityID in metadata should match with that in `<ApplicationDefaults>` in **shibboleth2.xml**.
 3. For AssertionConsumerService, there are quite a few available options for shibboleth on SAML2.0 and usually the common choice is `urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST`.
 
+### Switch from In-Memory Session Storage to Database (PostgreSQL, MySQL, etc)
+Sometimes, due to the increasing incoming load for the application, single server architecture is not enough to carry the load and also not suitable for scaling further. Then you will need to migrate the system into a load balanced server cluster. Specifically for clustering with shibboleth based federation, you will need a centralized end point, like database, to synchronize and persist your session data among servers. This section will guide you through a typical setup using PostgreSQL database (instructions for other database can be found [here](https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPODBCStorageService)).
+
+#### Database Setup
+1. create a new database on your server postgresql scope called `shibboleth-sp`(or any name suitable for your purpose).
+2. create three tables with following schema:
+
+```
+CREATE TABLE version (
+    major int NOT NULL,
+    minor int NOT NULL
+    );
+    
+INSERT INTO version VALUES (1,0);
+
+CREATE TABLE strings (
+    context varchar(255) NOT NULL,
+    id      varchar(255) NOT NULL,
+    expires timestamp    NOT NULL,
+    version smallint     NOT NULL,
+    value   varchar(255) NOT NULL,
+    PRIMARY KEY (context, id)
+    );
+    
+CREATE TABLE texts (
+    context varchar(255) NOT NULL,
+    id      varchar(255) NOT NULL,
+    expires timestamp    NOT NULL,
+    version smallint     NOT NULL,
+    value   text         NOT NULL,
+    PRIMARY KEY (context, id)
+    ); 
+```
+
+3. **NOTE:** be sure that your pg_hba.conf file is setup to allow IPv4 MD5 authentication from the network location of your Shibboleth-SP host:
+
+```
+local   all             postgres                      peer
+host    all             all              127.0.0.1/32 md5
+host    all             all              10.0.0.0/8   md5
+```
+
+4. **IMPORTATN STEP:** on ubuntu, you need to install one package:
+
+[odbc-postgresql]
+
+[odbc-postgresql]: https://odbc.postgresql.org
+
+**odbc-postgresql** package is the odbc connector for PostgreSQL on ubuntu, packaged with PostgreSQL driver. You will need this to enable shibboleth to connect to the database. 
+After installing, you can find two configurations files created: `/etc/odbcinst.ini` and `/etc/odbc.ini`. Run command `odbcinst -q -d` and you will get the available driver configurations.
+Specifically, there are two types of drivers available by default: **PostgreSQL ANSI** and **PostgreSQL Unicode**. The difference is on the encoding format the database will use to store and parse the data. You can further explore the details online but most of the cases we will stick to **PostgreSQL Unicode**.
+
+#### Shibboleth Configuration
+After configuring the database, you will need to update shibboleth.xml also.
+
+1. first update this part of the file:
+	
+```
+<OutOfProcess logger="shibd.logger">
+	<Extensions>
+	  <Library path="odbc-store.so" fatal="true"/>
+	</Extensions>
+</OutOfProcess>
+```
+The library odbc-store.so is the one used by shibboleth to connect to database. For some system, this library will be available under your `/etc/shibboleth` folder. However, someone doesn't have this lib available after they install the shibboleth resource. It may locate in a different place (`/usr/lib/...` for mine). In this case, you may have to create a symbolic link to link the odbc-
+store.so into folder `/etc/shibboleth` for the ease of your shibboleth configuration.
+
+2. Then added the follow configurations after the `<OutOfProcess>` block:
+
+```
+<StorageService type="ODBC" id="db" cleanupInterval="900">
+    <ConnectionString><![CDATA[
+	Driver=PostgreSQL;Server=127.0.0.1;Port=5432;Database=shibboleth-sp;Uid=shibboleth-sp;Password=shibboleth-sp-password
+]]></ConnectionString>
+  </StorageService>
+  <SessionCache type="StorageService" StorageService="db" cacheAllowance="3600" inprocTimeout="900" cleanupInterval="900" />
+  <ReplayCache StorageService="db" />
+  <ArtifactMap StorageService="db" artifactTTL="180" />
+```
+
+This part provides necessary database information for shibboleth to connect. The **CDATA[...** string is the database connection string that is common setup. We will skip the detailed discussion about it.
+
+3. Last but not least, change the `relayState` from **ss:mem** to **ss:db** in `<Sessions>` block. This will switch the session persistence strategy from memory to database.
+
+After all the configurations are done, ideally you can expect the shibboleth service provider is using database to save the session information now. While if there is any trouble, feel free to check the shibboleth error log and that will provide you detailed enough reasons.
+
 ## Conclusion
 After all the steps above, you should be able to setup a workable server protected by shibboleth. There are also quite a lot of way to verify the sucess, which you can easily find and I will not discussed here.
